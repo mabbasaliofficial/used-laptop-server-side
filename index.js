@@ -22,18 +22,18 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    const productsCollection = client.db("laptopShowcase").collection("productsCategory");
+    const categoryCollection = client.db("laptopShowcase").collection("productsCategory");
+    const productsCollection = client.db("laptopShowcase").collection("products");
     app.get("/productsCategory", async (req, res) => {
       const query = {};
-      const options = await productsCollection.find(query).toArray();
+      const options = await categoryCollection.find(query).toArray();
       res.send(options);
     });
     app.get("/products/:id", async (req, res) => {
       const id = req.params.id;
-      console.log(id)
-      const query = {};
-      const category_products = news.filter((n) => n.category_id === id);
-      res.send(category_products);
+      const query = { category_id: id };
+      const products = await productsCollection.find(query).toArray();
+      res.send(products);
     });
   } finally {
   }
