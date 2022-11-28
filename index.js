@@ -68,7 +68,7 @@ async function run() {
       const email = req.query.email;
       const decodedEmail = req.decoded.email;
       if (email !== decodedEmail) {
-        return res.status(403).send({message: 'forbidden access'})
+        return res.status(403).send({ message: "forbidden access" });
       }
       const query = { email: email };
       const buying = await buyingCollection.find(query).toArray();
@@ -92,7 +92,7 @@ async function run() {
       res.status(403).send({ accessToken: "" });
     });
 
-    app.get('/users', async(req, res) => {
+    app.get("/users", async (req, res) => {
       const query = {};
       const users = await usersCollection.find(query).toArray();
       res.send(users);
@@ -102,6 +102,27 @@ async function run() {
       const user = req.body;
       const result = await usersCollection.insertOne(user);
       res.send(result);
+    });
+
+    app.put("/users/admin/:id", verifyJWT, async (req, res) => {
+
+      const decodedEmail = req.decoded.email;
+      const query = {email: decodedEmail};
+      const user = await usersCollection.findOne(query);
+      if(user?.role !== 'admin'){
+        return res.status(403).send({message: 'forbidden access'})
+      }
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+
     });
   } finally {
   }
