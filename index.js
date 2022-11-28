@@ -2,7 +2,7 @@ const express = require("express");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 require("dotenv").config();
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
 const port = process.env.PORT || 5000;
 const app = express();
@@ -21,12 +21,28 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send("unauthorized access");
+  }
+  const token = authHeader.split(" ")[1];
+
+  jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: "forbidden access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
+
 async function run() {
   try {
     const categoryCollection = client.db("laptopShowcase").collection("productsCategory");
     const productsCollection = client.db("laptopShowcase").collection("products");
-    const buyingCollection = client.db("laptopShowcase").collection('buying');
-    const usersCollection = client.db('laptopShowcase').collection('users');
+    const buyingCollection = client.db("laptopShowcase").collection("buying");
+    const usersCollection = client.db("laptopShowcase").collection("users");
 
     app.get("/productsCategory", async (req, res) => {
       const query = {};
@@ -41,44 +57,46 @@ async function run() {
       res.send(products);
     });
 
-    app.get('/products/:id', async(req, res) => {
-        const id = req.params.id;
-        const query = { _id: ObjectId(id) };
-        const product = await productsCollection.findOne(query);
-        res.send(product);
-    })
-
-    app.get('/buying', async(req, res) => {
-      const email = req.query.email;
-      console.log('token', req.headers.authorization)
-      const query = {email: email};
-      const buying = await buyingCollection.find(query).toArray();
-      res.send(buying)
-    })
-
-    app.post('/buying', async(req, res) => {
-      const buying = req.body;
-      const result = await buyingCollection.insertOne(buying);
-      res.send(result)
-    })
-
-    app.get('/jwt', async(req, res) => {
-      const email = req.query.email;
-      const query = {email: email};
-      const user = await usersCollection.findOne(query);
-      if(user){
-        const token = jwt.sign({email}, process.env.ACCESS_TOKEN, {expiresIn: '1h'})
-        return res.send({accessToken: token});
-      }
-      res.status(403).send({accessToken: ''})
+    app.get("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const product = await productsCollection.findOne(query);
+      res.send(product);
     });
 
-    app.post('/users', async(req, res) => {
+    app.get("/buying", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({message: 'forbidden access'})
+      }
+      const query = { email: email };
+      const buying = await buyingCollection.find(query).toArray();
+      res.send(buying);
+    });
+
+    app.post("/buying", async (req, res) => {
+      const buying = req.body;
+      const result = await buyingCollection.insertOne(buying);
+      res.send(result);
+    });
+
+    app.get("/jwt", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      if (user) {
+        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: "1h" });
+        return res.send({ accessToken: token });
+      }
+      res.status(403).send({ accessToken: "" });
+    });
+
+    app.post("/users", async (req, res) => {
       const user = req.body;
       const result = await usersCollection.insertOne(user);
-      res.send(result)
-    })
-
+      res.send(result);
+    });
   } finally {
   }
 }
