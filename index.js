@@ -66,10 +66,6 @@ async function run() {
 
     app.get("/buying", verifyJWT, async (req, res) => {
       const email = req.query.email;
-      const decodedEmail = req.decoded.email;
-      if (email !== decodedEmail) {
-        return res.status(403).send({ message: "forbidden access" });
-      }
       const query = { email: email };
       const buying = await buyingCollection.find(query).toArray();
       res.send(buying);
