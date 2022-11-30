@@ -75,6 +75,14 @@ async function run() {
       res.send(buying);
     });
 
+    app.get('/buying/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const product = await buyingCollection.findOne(query);
+      res.send(product);
+
+    })
+
     app.post("/buying", async (req, res) => {
       const buying = req.body;
       const result = await buyingCollection.insertOne(buying);
@@ -96,6 +104,13 @@ async function run() {
       const query = {};
       const users = await usersCollection.find(query).toArray();
       res.send(users);
+    });
+
+    app.get("/user", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      res.send(user);
     });
 
     app.post("/users", async (req, res) => {
@@ -143,6 +158,13 @@ async function run() {
       res.send(seller);
     });
 
+    app.get("/users/seller/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      res.send({ isSeller: user?.role === "seller" });
+    });
+
     app.put("/users/seller/:id", verifyJWT, async (req, res) => {
       const decodedEmail = req.decoded.email;
       const query = { email: decodedEmail };
@@ -166,6 +188,13 @@ async function run() {
       const query = {role: 'buyer'};
       const buyer = await usersCollection.find(query).toArray();
       res.send(buyer);
+    });
+
+    app.get("/users/buyer/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      res.send({ isBuyer: user?.role === "buyer" });
     });
 
     
