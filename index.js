@@ -142,6 +142,26 @@ async function run() {
       const seller = await usersCollection.find(query).toArray();
       res.send(seller);
     });
+
+    app.put("/users/seller/:id", verifyJWT, async (req, res) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          verify: "verified",
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
+
     app.get('/buyer', async (req, res) => {
       const query = {role: 'buyer'};
       const buyer = await usersCollection.find(query).toArray();
